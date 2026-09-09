@@ -1,0 +1,416 @@
+[
+  {
+    "id": "sc_uc1_001",
+    "domain": "App Integrations",
+    "useCaseNumber": 1,
+    "title": "Onboarding a Pre-Integrated SaaS App",
+    "scenarioText": "A consultant is asked to add \"Acme CRM\" for the sales team. A search of the Okta Integration Network (OIN) shows an existing \"Acme CRM\" listing that supports SAML 2.0 and SCIM provisioning.",
+    "steps": null,
+    "question": "What should the consultant do first?",
+    "options": [
+      "Add the Acme CRM app from the OIN catalog and configure it using its pre-built SAML/SCIM settings",
+      "Build a brand-new custom SAML 2.0 app integration from scratch to have full control",
+      "Use SWA (Secure Web Authentication) instead since it requires no configuration",
+      "Contact Acme CRM's support team to request a private app be built"
+    ],
+    "correctIndex": 0,
+    "explanation": "Because a supported OIN listing exists, that is the correct and recommended starting point since it comes with maintained SAML/SCIM configuration templates. Building a custom app is only needed when no matching OIN listing exists or the org needs behavior the OIN app can't provide. SWA is a weaker legacy option used only when the app doesn't support federated SSO. Contacting vendor support is unnecessary since Okta already provides the integration."
+  },
+  {
+    "id": "sc_uc1_002",
+    "domain": "App Integrations",
+    "useCaseNumber": 1,
+    "title": "Custom SAML App Fails to Log In",
+    "scenarioText": "A consultant configures a custom SAML 2.0 app integration for an internal line-of-business app that isn't in the OIN. After configuring the app in Okta and testing SSO, users get an audience-mismatch error at the service provider.",
+    "steps": [
+      "Create custom SAML 2.0 app integration in Okta",
+      "Enter SP-provided ACS URL and Audience URI (SP Entity ID)",
+      "Download Okta IdP metadata / certificate",
+      "Upload Okta metadata to the SP",
+      "Test SSO"
+    ],
+    "question": "Given the error described, which configuration item is the most likely culprit?",
+    "options": [
+      "The Audience URI (SP Entity ID) configured in Okta doesn't exactly match the value the service provider expects",
+      "The app was assigned to the wrong Okta group",
+      "The app's sign-on policy requires too many authentication factors",
+      "The custom app should have been built as OIDC instead of SAML"
+    ],
+    "correctIndex": 0,
+    "explanation": "An audience-mismatch error strongly points to the Audience URI (SP Entity ID), or occasionally the ACS URL, not matching the value the SP expects exactly, which is a very common custom SAML app misconfiguration. Wrong group assignment would cause an access/visibility issue, not a SAML validation error. Extra sign-on policy factors would produce an MFA prompt, not a signature error. Choosing OIDC vs SAML is a design choice unrelated to this specific error signature."
+  },
+  {
+    "id": "sc_uc1_003",
+    "domain": "App Integrations",
+    "useCaseNumber": 1,
+    "title": "Custom OIDC App Redirect Failure",
+    "scenarioText": "A consultant builds a custom OIDC web application integration. After successful login at Okta, the browser returns an error indicating the redirect URI is not allowed.",
+    "steps": null,
+    "question": "What is the correct fix?",
+    "options": [
+      "Add the exact callback/redirect URI the application uses to the app's sign-in redirect URIs list in Okta",
+      "Switch the app integration from OIDC to SAML",
+      "Increase the access token lifetime in the app's token policy",
+      "Add the application to a new Okta group"
+    ],
+    "correctIndex": 0,
+    "explanation": "OIDC/OAuth requires the exact redirect URI used by the client to be registered in the app's configuration; an invalid-redirect-URI error means that list needs to be corrected or added to, not switched protocols, and is unrelated to token lifetime or group assignment."
+  },
+  {
+    "id": "sc_uc1_004",
+    "domain": "App Integrations",
+    "useCaseNumber": 1,
+    "title": "Scaling App Access Across the Sales Org",
+    "scenarioText": "After building the Acme CRM app integration, the consultant needs 200 sales users across three departments to get access, with new hires automatically gaining access going forward.",
+    "steps": null,
+    "question": "What is the best-practice approach?",
+    "options": [
+      "Assign the app to an Okta group (or groups) that represents sales membership, rather than assigning to each user individually",
+      "Manually assign the app to each of the 200 users one at a time",
+      "Make the app available to everyone in the org",
+      "Create a new custom admin role granting sales users access"
+    ],
+    "correctIndex": 0,
+    "explanation": "Group-based app assignment scales and keeps access aligned with group membership going forward, so new members auto-inherit assignment. Individual assignment doesn't scale or handle future hires. Org-wide assignment over-grants access beyond sales. Admin roles control administrative permissions, not application access."
+  },
+  {
+    "id": "sc_uc1_005",
+    "domain": "App Integrations",
+    "useCaseNumber": 1,
+    "title": "Offboarding Through the Acme CRM Integration",
+    "scenarioText": "The Acme CRM OIN app was configured with SCIM provisioning enabled, including pushing new users and pushing profile updates. HR just deactivated an employee in Okta.",
+    "steps": null,
+    "question": "For the deactivation to also deactivate the user's Acme CRM account automatically, what must also be true about the app configuration?",
+    "options": [
+      "The provisioning feature that pushes user deactivation must be separately enabled for the app",
+      "The app must be reassigned to the everyone group",
+      "The app's sign-on policy must require MFA",
+      "The user's profile source must be switched to Active Directory"
+    ],
+    "correctIndex": 0,
+    "explanation": "SCIM-based deprovisioning to a downstream app only happens if that specific deactivation provisioning feature is enabled for that app; enabling push-new-user and push-profile-update provisioning does not automatically include deactivation, since each provisioning action is toggled independently. The other options don't control deprovisioning behavior."
+  },
+  {
+    "id": "sc_uc1_006",
+    "domain": "App Integrations",
+    "useCaseNumber": 1,
+    "title": "Mapping a Composite Username",
+    "scenarioText": "The target SaaS application, added via a custom SAML app, requires the username to be the user's first initial plus last name in lowercase (for example \"jsmith\"), but the Okta user profile only stores firstName and lastName separately.",
+    "steps": null,
+    "question": "What is the most direct way to satisfy this login requirement?",
+    "options": [
+      "Use an Okta Expression Language expression in the app's username or attribute mapping to compute the value from firstName and lastName",
+      "Ask HR to add a new custom attribute manually for every user",
+      "Change the app's authentication protocol to SCIM only",
+      "Create a group rule to filter which users can log in"
+    ],
+    "correctIndex": 0,
+    "explanation": "Okta Expression Language can compute derived values, such as string concatenation and lowercasing of profile attributes, directly in the app's username or attribute mapping, which is exactly the tool for this kind of transformation. Manually adding a custom attribute per user doesn't scale and duplicates data that can drift. SCIM is a provisioning protocol, not a login-format fix. Group rules control assignment, not username formatting."
+  },
+  {
+    "id": "sc_uc2_001",
+    "domain": "Creating a Custom Admin",
+    "useCaseNumber": 2,
+    "title": "Help Desk Needs Limited Admin Access",
+    "scenarioText": "The IT help desk team needs to unlock accounts and reset MFA factors for end users, but should not be able to change org-wide security policies, add new applications, or manage other administrators.",
+    "steps": null,
+    "question": "What is the best-practice way to grant this access?",
+    "options": [
+      "Create a Custom Admin Role scoped to only the specific permissions needed, such as unlocking users and resetting MFA factors, and assign it to the help desk group",
+      "Grant the help desk team the Super Administrator role",
+      "Grant the Application Administrator role to the help desk team",
+      "Give each help desk member individual API tokens with full scope"
+    ],
+    "correctIndex": 0,
+    "explanation": "Custom Admin Roles let you grant a precise, least-privilege set of permissions matching exactly unlock-users and reset-MFA-factors, without any broader access. Super Administrator is far too broad and violates least privilege. Application Administrator is scoped to app management, not user unlock or MFA reset. Individual full-scope API tokens are both overly broad and bypass the admin-role model entirely."
+  },
+  {
+    "id": "sc_uc2_002",
+    "domain": "Creating a Custom Admin",
+    "useCaseNumber": 2,
+    "title": "Regional Admin Boundaries",
+    "scenarioText": "A global org wants EMEA-region help desk admins to manage only users in the EMEA organizational group, not users in APAC or AMER groups.",
+    "steps": null,
+    "question": "How should this be configured?",
+    "options": [
+      "Create a Custom Admin Role with the needed permissions and assign it via a Resource Set scoped to only the EMEA group",
+      "Create three separate Okta orgs, one per region",
+      "Rely on the help desk team to manually avoid touching non-EMEA users",
+      "Use a group provisioning rule to hide APAC and AMER users from the admin console"
+    ],
+    "correctIndex": 0,
+    "explanation": "Custom Admin Roles combined with Resource Sets let an administrator's permissions be scoped to specific groups, apps, or other resources, which is exactly what's needed to limit an admin's reach to only the EMEA group. Splitting into multiple orgs is a drastic, unnecessary architecture change. Relying on manual restraint is not an access control and is not auditable. Downstream group provisioning is for pushing group membership to apps or directories, not for scoping admin console visibility."
+  },
+  {
+    "id": "sc_uc2_003",
+    "domain": "Creating a Custom Admin",
+    "useCaseNumber": 2,
+    "title": "Bulk App Assignment After a Reorg",
+    "scenarioText": "Following a reorg, 40 users have moved from the Marketing group to the newly created Growth group, and need access to the same 5 apps that Growth already has access to.",
+    "steps": null,
+    "question": "What is the fastest, most maintainable way to grant these 40 users the correct app access?",
+    "options": [
+      "Add the 40 users to the Growth group, which already has the 5 apps assigned",
+      "Individually assign each of the 5 apps to each of the 40 users",
+      "Create 5 new custom admin roles, one per app",
+      "Ask each user to self-request access to each app via a support ticket"
+    ],
+    "correctIndex": 0,
+    "explanation": "Because Growth already has the 5 apps assigned at the group level, adding the 40 users to that group instantly grants correct access to all 5 apps and keeps future changes centralized. Individual per-app assignment is far slower and harder to maintain. Custom admin roles control administrative permissions, not end-user app access. Self-request tickets are unnecessary manual overhead when group membership already solves this."
+  },
+  {
+    "id": "sc_uc2_004",
+    "domain": "Creating a Custom Admin",
+    "useCaseNumber": 2,
+    "title": "Auditor Flags Excessive Super Admin Accounts",
+    "scenarioText": "A security audit finds that 12 different staff members across departments have been granted the Super Administrator role over time, mostly so they could each manage their own department's application assignments.",
+    "steps": null,
+    "question": "What is the recommended remediation?",
+    "options": [
+      "Replace their Super Administrator assignments with Custom Admin Roles scoped to only application assignment for their respective departments",
+      "Leave the assignments as-is since Super Administrator covers every use case",
+      "Remove admin access entirely and have one person manage all departments",
+      "Rotate the Super Administrator role among the 12 staff on a schedule"
+    ],
+    "correctIndex": 0,
+    "explanation": "This is a textbook least-privilege violation. Custom Admin Roles scoped to exactly the needed permission, assigning apps within a department, replace the broad Super Administrator grant while preserving each person's ability to do their job. Leaving it as-is ignores the audit finding. Centralizing to one person doesn't scale and isn't what was requested. Rotating Super Admin doesn't reduce the excessive privilege, it just spreads the risk around."
+  },
+  {
+    "id": "sc_uc2_005",
+    "domain": "Creating a Custom Admin",
+    "useCaseNumber": 2,
+    "title": "Delegating Group Membership Management",
+    "scenarioText": "A consultant needs to let a specific team lead add and remove members from their own team's Okta group, without granting any other administrative capability.",
+    "steps": null,
+    "question": "What should the consultant configure?",
+    "options": [
+      "A Custom Admin Role with only the manage-group-membership permission, scoped via a Resource Set to that specific group",
+      "Make the team lead a Group Administrator for the entire org",
+      "Give the team lead direct database access to the identity store",
+      "Add the team lead to the group they need to manage, which automatically grants management rights"
+    ],
+    "correctIndex": 0,
+    "explanation": "A narrowly scoped Custom Admin Role with a Resource Set limited to the one group is the precise least-privilege solution. Org-wide Group Administrator grants control over every group, not just the team's own. Direct database access is never an appropriate Okta administration method. Simply being a member of a group does not grant any administrative rights over that group."
+  },
+  {
+    "id": "sc_uc2_006",
+    "domain": "Creating a Custom Admin",
+    "useCaseNumber": 2,
+    "title": "Onboarding a New Batch of Delegated Admins",
+    "scenarioText": "The organization is standing up a Regional IT Leads custom admin role and expects membership to change periodically as regional leads rotate.",
+    "steps": null,
+    "question": "What is the most maintainable way to assign the custom admin role?",
+    "options": [
+      "Assign the Custom Admin Role to a group, such as Regional IT Leads, and manage membership through that group going forward",
+      "Assign the Custom Admin Role individually to each current regional lead by name",
+      "Recreate the Custom Admin Role every time membership changes",
+      "Grant the role via a temporary API token shared among the leads"
+    ],
+    "correctIndex": 0,
+    "explanation": "Assigning admin roles to a group, rather than to individuals, means future membership changes such as a new lead rotating in are handled simply by updating group membership, with no re-configuration of the role itself needed. Individual assignment requires manual admin-role changes every rotation. Recreating the role is unnecessary and error-prone. Shared API tokens bypass the admin role model and are a security risk."
+  },
+  {
+    "id": "sc_uc3_001",
+    "domain": "Configuring Policies",
+    "useCaseNumber": 3,
+    "title": "A Rule Never Seems to Apply",
+    "scenarioText": "A consultant adds a new authentication policy rule requiring phishing-resistant authentication for access from an untrusted network zone, and places it at the bottom of the rule list, below the existing default catch-all rule.",
+    "steps": null,
+    "question": "Why does the new rule never seem to take effect?",
+    "options": [
+      "Authentication policy rules are evaluated top-to-bottom and the first matching rule wins, so a broad catch-all rule placed above it will always match first",
+      "Phishing-resistant authentication cannot be required in authentication policies",
+      "The rule needs to be attached to a Global Session Policy instead",
+      "Network zone conditions are only supported in sign-on policies, not authentication policies"
+    ],
+    "correctIndex": 0,
+    "explanation": "Okta authentication policy rules are evaluated in order, top to bottom, with the first matching rule applied. Since a catch-all rule typically matches everything, placing a more specific rule below it means it will never be reached; the fix is to move the more specific rule above the catch-all rule. Phishing-resistant factor requirements are fully supported. Global Session Policy governs session lifetime and behavior detection, not authentication factor requirements. Network zone conditions are valid in authentication policy rule conditions."
+  },
+  {
+    "id": "sc_uc3_002",
+    "domain": "Configuring Policies",
+    "useCaseNumber": 3,
+    "title": "Blocking Access Before Credentials Are Even Prompted",
+    "scenarioText": "Security wants users connecting from a specific list of denied countries to be blocked before they ever see a username or password prompt, rather than being allowed to authenticate and then denied afterward.",
+    "steps": null,
+    "question": "Which capability should the consultant configure?",
+    "options": [
+      "A Pre-Authentication Sign-On Evaluation Policy rule that denies access based on network zone or location before the credential prompt",
+      "An authentication policy rule requiring an additional MFA factor",
+      "A Global Session Policy idle timeout rule",
+      "A custom admin role restricting console access by region"
+    ],
+    "correctIndex": 0,
+    "explanation": "The Pre-Authentication Sign-On Evaluation Policy evaluates conditions like network zone before the user is even prompted for credentials, which is exactly the block-before-login-screen behavior requested. An authentication policy MFA requirement still lets the user reach the credential or factor prompt. Session idle timeout affects existing sessions, not initial access. Admin role restrictions govern administrator permissions, not end-user sign-in."
+  },
+  {
+    "id": "sc_uc3_003",
+    "domain": "Configuring Policies",
+    "useCaseNumber": 3,
+    "title": "Different MFA Requirements for a Sensitive App",
+    "scenarioText": "The organization wants a specific finance application to require phishing-resistant MFA every time, while all other apps continue to use the standard org-wide authentication requirements.",
+    "steps": null,
+    "question": "How should this be configured?",
+    "options": [
+      "Create a dedicated authentication policy with the stricter requirement and assign it specifically to the finance app, leaving the default policy for all other apps",
+      "Change the org-wide Global Session Policy to require phishing-resistant MFA for everyone",
+      "Create a custom admin role for the finance app",
+      "Add all finance app users to a group with a shorter password expiration"
+    ],
+    "correctIndex": 0,
+    "explanation": "Authentication policies can be created per-app, or per set of apps, to layer stricter requirements on top of specific applications without affecting the org-wide default policy used elsewhere. Changing the Global Session Policy org-wide would over-apply the stricter requirement to every app. A custom admin role governs administrative permissions, not end-user authentication requirements. Password expiration on a group doesn't address the MFA requirement being asked for."
+  },
+  {
+    "id": "sc_uc3_004",
+    "domain": "Configuring Policies",
+    "useCaseNumber": 3,
+    "title": "Step-Up Only for Risky Access",
+    "scenarioText": "The security team wants low-risk sign-ins from a known device, known network, and known behavior to only require a password, while sign-ins from a new device or unfamiliar location require an additional possession factor.",
+    "steps": null,
+    "question": "What is the best way to implement this?",
+    "options": [
+      "Configure an authentication policy with multiple rules, a stricter rule matching on new-device or unfamiliar-network conditions requiring an additional factor, and a lower rule allowing password-only for the low-risk case",
+      "Require every user to enter two factors on every single login regardless of risk",
+      "Disable MFA entirely to simplify the login experience",
+      "Use a custom admin role to flag new devices"
+    ],
+    "correctIndex": 0,
+    "explanation": "This is exactly what layered authentication policy rules are for: a more specific, stricter rule matching risk conditions such as new device or network is placed above a more permissive catch-all rule, so step-up factors are required only when the risk conditions match. Requiring two factors universally ignores the low-risk-means-password-only requirement. Disabling MFA is the opposite of what's being asked. Custom admin roles have nothing to do with sign-in risk evaluation."
+  },
+  {
+    "id": "sc_uc3_005",
+    "domain": "Configuring Policies",
+    "useCaseNumber": 3,
+    "title": "Detecting an Impossible Travel Pattern",
+    "scenarioText": "A user's account shows a sign-in from New York followed nine minutes later by a sign-in from Singapore. The organization wants this pattern flagged and to trigger a step-up authentication requirement, without outright blocking the account.",
+    "steps": null,
+    "question": "What should be configured to achieve this?",
+    "options": [
+      "Enable Behavior Detection for velocity or impossible travel in the authentication policy, and require step-up authentication when the behavior condition is matched",
+      "Immediately and permanently suspend any account that logs in from more than one country in a day",
+      "Configure a routing rule that blocks Singapore-based identity providers",
+      "Add a custom admin role that reviews suspicious logins manually"
+    ],
+    "correctIndex": 0,
+    "explanation": "Behavior Detection, with velocity-based impossible travel as a classic example, can be evaluated as a condition on policy rules, triggering step-up authentication rather than an outright block, matching what was asked for. Permanently suspending on first detection is far too disruptive and not what was requested. Routing rules direct users to identity providers and are unrelated to behavior anomaly response. A manual admin review doesn't provide the automated step-up control being asked for."
+  },
+  {
+    "id": "sc_uc3_006",
+    "domain": "Configuring Policies",
+    "useCaseNumber": 3,
+    "title": "New Policy Isn't Affecting a Specific App",
+    "scenarioText": "A consultant creates a new, stricter authentication policy and assumes it now protects every application in the org, but testing shows one specific business application still only enforces the old, more permissive requirements.",
+    "steps": null,
+    "question": "What is the most likely explanation?",
+    "options": [
+      "The new authentication policy was never explicitly assigned to that specific application, so it is still using its previously assigned policy",
+      "Authentication policies automatically apply to every app in the org the moment they are created",
+      "The application's sign-on policy overrides all authentication policies by design",
+      "The application needs to be removed and re-added to pick up new policies"
+    ],
+    "correctIndex": 0,
+    "explanation": "Authentication policies must be explicitly assigned to each application, or set of applications, they should govern; creating a policy does not automatically apply it everywhere, so the fix is to assign the new policy to the app in question. Automatic org-wide application is false and is the misconception at the root of the issue. There is no rule that legacy sign-on policy settings globally override authentication policies by design. Removing and re-adding the app is unnecessary and doesn't address the real cause of a missing policy assignment."
+  },
+  {
+    "id": "sc_uc4_001",
+    "domain": "Creating Routing Rules",
+    "useCaseNumber": 4,
+    "title": "Routing Contractors to a Different Identity Provider",
+    "scenarioText": "A company acquired a subsidiary whose employees authenticate against their own external IdP using email addresses ending in @subsidiary.com, while the parent company's employees use Okta's built-in authentication.",
+    "steps": null,
+    "question": "What should the consultant configure so subsidiary employees are automatically routed to their own IdP at the Okta sign-in page?",
+    "options": [
+      "An IdP Discovery routing rule that matches the @subsidiary.com email domain and routes to the subsidiary's configured identity provider",
+      "A Global Session Policy rule limiting subsidiary users' session length",
+      "A group provisioning rule targeting the subsidiary's Active Directory organizational unit",
+      "A custom admin role scoped to the subsidiary's users"
+    ],
+    "correctIndex": 0,
+    "explanation": "IdP Discovery routing rules let Okta inspect sign-in attributes like email domain and route the user to the correct configured identity provider automatically, exactly the domain-based routing scenario described. Session policy, group provisioning, and custom admin roles address session behavior, downstream group provisioning, and admin permissions respectively, and none of them control which IdP a user is routed to at sign-in."
+  },
+  {
+    "id": "sc_uc4_002",
+    "domain": "Creating Routing Rules",
+    "useCaseNumber": 4,
+    "title": "The Wrong IdP Keeps Matching",
+    "scenarioText": "A consultant configures two IdP Discovery routing rules: a general rule that routes all @company.com users to Okta's built-in IdP, and a more specific rule intended to route @company.com users in the Contractors group to an external IdP. After activation, contractors are still routed to the built-in IdP.",
+    "steps": null,
+    "question": "What is the most likely cause and fix?",
+    "options": [
+      "The general rule is ordered above the specific rule; routing rules are evaluated top-down and the first match wins, so the specific contractor rule must be moved above the general rule",
+      "IdP Discovery rules cannot use group membership as a condition",
+      "The contractor group must first be pushed to the external IdP before rules can reference it",
+      "IdP Discovery only supports one rule per org"
+    ],
+    "correctIndex": 0,
+    "explanation": "Like most Okta rule-based systems, IdP Discovery routing rules are evaluated in order and the first matching rule is applied, so a broad rule placed above a specific one will always win; the fix is reordering so the more specific rule is evaluated first. Group membership conditions are supported in routing rules. No group push to the external IdP is required for a routing rule to reference group membership. Multiple rules per org are fully supported."
+  },
+  {
+    "id": "sc_uc4_003",
+    "domain": "Creating Routing Rules",
+    "useCaseNumber": 4,
+    "title": "Duplicate Accounts After Enabling an External IdP",
+    "scenarioText": "After configuring Okta as a Service Provider with a third-party IdP for inbound federation, some users who already had existing local Okta accounts end up with a second, duplicate account created via the federated login instead of being matched to their existing one.",
+    "steps": null,
+    "question": "What should the consultant configure to prevent this?",
+    "options": [
+      "Configure account linking, matching on a common attribute such as email, so federated logins are matched to existing Okta user profiles instead of creating new ones",
+      "Delete all existing local accounts before enabling the external IdP",
+      "Require users to manually merge their own accounts via a support ticket",
+      "Disable Just-In-Time provisioning entirely for the federated IdP"
+    ],
+    "correctIndex": 0,
+    "explanation": "Account linking functions let inbound federation match an incoming federated identity to an existing Okta profile, commonly via a shared attribute like email, rather than always creating a new profile, which directly solves the duplicate-account problem. Deleting existing accounts is destructive and loses profile history and assignments. Manual merging via ticket doesn't scale and isn't how the platform is meant to be configured. Disabling JIT provisioning would instead prevent any new federated users from being created at all, which is not the actual problem being solved."
+  },
+  {
+    "id": "sc_uc4_004",
+    "domain": "Creating Routing Rules",
+    "useCaseNumber": 4,
+    "title": "Adding Social Login for a Consumer-Facing App",
+    "scenarioText": "A consultant needs to let external customers sign in to a consumer-facing app using their existing Google accounts, while employees continue to sign in with their normal corporate credentials.",
+    "steps": null,
+    "question": "What combination should the consultant configure?",
+    "options": [
+      "Add Google as a Social Identity Provider and configure routing so the consumer-facing app offers Google sign-in while internal apps continue to use standard authentication",
+      "Migrate the entire organization's authentication to Google Workspace",
+      "Create a custom admin role for Google-authenticated users",
+      "Require internal employees to also authenticate via Google going forward"
+    ],
+    "correctIndex": 0,
+    "explanation": "Social Identity Providers such as Google can be configured and routed to specific applications, letting a consumer-facing app offer social login without changing how internal employees authenticate. Migrating the whole org to Google Workspace is unnecessary and out of scope. A custom admin role is unrelated since it governs administrative permissions, not customer authentication. Forcing internal employees onto Google login contradicts the requirement to keep their existing method."
+  },
+  {
+    "id": "sc_uc4_005",
+    "domain": "Creating Routing Rules",
+    "useCaseNumber": 4,
+    "title": "Connecting Two Okta Orgs After an Acquisition",
+    "scenarioText": "Following an acquisition, the company wants users in the newly acquired company's separate Okta org to be able to single sign-on into applications hosted in the parent company's Okta org, without immediately migrating every user and app into one org.",
+    "steps": null,
+    "question": "What Okta capability directly addresses this need?",
+    "options": [
+      "Okta Org2Org, which federates authentication between two separate Okta orgs",
+      "A Custom Admin Role granting cross-org administrative access",
+      "A group provisioning rule configured between the two orgs' Active Directory instances",
+      "Increasing the session lifetime in the Global Session Policy"
+    ],
+    "correctIndex": 0,
+    "explanation": "Org2Org is the specific Okta feature designed to federate authentication between two independent Okta orgs, letting users in one org single sign-on into apps in another, exactly the acquisition scenario described, and a common interim step before or instead of a full org merge. A custom admin role only affects administrative permissions within a single org. A group provisioning rule provisions group membership to downstream apps or directories, not cross-org authentication. Session lifetime is unrelated to cross-org federation."
+  },
+  {
+    "id": "sc_uc4_006",
+    "domain": "Creating Routing Rules",
+    "useCaseNumber": 4,
+    "title": "New External Users Aren't Being Routed Externally",
+    "scenarioText": "A consultant adds a new IdP Discovery rule to route a newly onboarded partner company's users, identified by email domain, to an external IdP, but testing shows those users are still landing on Okta's default sign-in form.",
+    "steps": null,
+    "question": "Assuming the rule's domain condition is written correctly, what is the most likely remaining configuration issue?",
+    "options": [
+      "The new rule was added below the org's default catch-all rule, so the catch-all matches first and the more specific partner rule is never evaluated",
+      "IdP Discovery rules require the external IdP to be deactivated before they can be tested",
+      "Routing rules only take effect after a mandatory 24-hour propagation delay with no way to test sooner",
+      "The partner users must first be manually assigned to the external IdP as an app"
+    ],
+    "correctIndex": 0,
+    "explanation": "As with other Okta rule-based systems, the first matching rule wins; if a broad default catch-all rule sits above the new specific rule, it will always match first and the specific rule is effectively unreachable, so reordering the new rule above the catch-all resolves it. Deactivating the external IdP would break routing entirely rather than help testing. There is no mandatory 24-hour delay before a routing rule can be evaluated. Identity providers are not assigned as apps to users, which is not how routing works."
+  }
+]

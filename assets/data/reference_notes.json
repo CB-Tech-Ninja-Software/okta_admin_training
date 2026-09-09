@@ -1,0 +1,245 @@
+[
+  {
+    "id": "rn_a_001",
+    "domain": "Implementing Advanced Sourcing",
+    "topic": "as_a_source",
+    "title": "Designating an App as a Profile Source",
+    "body": "A profile source is whichever app or directory Okta treats as the system of record for a user's identity attributes. You turn a connected app or directory into a profile source by turning on its inbound (\"To Okta\") provisioning option, at which point it shows up in the Profile Sources list under Directory. Common candidates are HR systems like Workday or BambooHR, Active Directory, or another directory service — anything that should be allowed to create, update, and eventually deactivate the Okta user record on its own schedule rather than waiting for an admin to do it by hand.\n\nThe subtlety consultants get tested on is what happens when a single app is both a profile source and a provisioning target at the same time. If you also enable outbound attribute push (\"Update User Attributes\") on that same app, you can end up with a feedback loop or unmapped-attribute overwrite, because Okta is simultaneously reading from and writing to the same system. The safe mental model is that only one profile source should be authoritative for a given attribute at any moment — if you need two systems contributing different attributes, that's a job for attribute-level sourcing and priority ranking rather than turning on both directions on the same app.\n\nDesign discussions in this domain typically start with \"which system should own which attribute long-term,\" not just \"how do I turn the toggle on.\" Getting the source/target direction backward on an app is a classic self-inflicted sync loop.",
+    "sourceUrl": "https://help.okta.com/en-us/content/topics/users-groups-profiles/usgp-about-profile-sourcing.htm",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_a_002",
+    "domain": "Implementing Advanced Sourcing",
+    "topic": "hr_as_source_priority",
+    "title": "Profile Source Priority and Attribute-Level Sourcing",
+    "body": "When only one app is designated as a profile source, every attribute on the Okta user profile comes from that one place — simple, but inflexible. Once you add a second (or third) profile source, Okta needs a tiebreaker rule for any attribute that more than one source could theoretically supply, and that's what profile source priority is for: an ordered list, managed from Directory > Profile Sources, that determines which source wins by default.\n\nAttribute-level sourcing goes a step further than the ordered list. Instead of accepting \"whichever source is ranked highest wins for everything,\" an admin can override that default per attribute — for example, letting the HR system own name, title, and department, while Active Directory continues to own the work email and manager fields, even if AD is ranked lower overall. This is exactly the kind of design decision a Consultant-level engagement has to make explicit early, because getting it wrong silently overwrites good HR data with stale directory data (or vice versa) on the next sync cycle.\n\nA practical detail worth remembering: a newly added profile source is always inserted at the bottom of the priority list. That's a deliberate safety choice — bringing in a new HR feed or directory doesn't retroactively change who currently owns which attribute until an admin explicitly re-ranks it.",
+    "sourceUrl": "https://help.okta.com/en-us/content/topics/users-groups-profiles/usgp-prioritize-profile-source.htm",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_a_003",
+    "domain": "Implementing Advanced Sourcing",
+    "topic": "sourcing_troubleshooting",
+    "title": "Planning a Data Migration Strategy Into Okta",
+    "body": "A migration plan for bringing users into Okta starts with an inventory question, not a technical one: for every attribute you care about, which existing system is actually the source of truth today? Okta's own guidance is blunt about scope here — it isn't meant to become a general-purpose data warehouse, so the inventory should be scoped to what identity and access decisions actually require, not every field a legacy HR or directory system happens to store. That inventory typically becomes a mapping matrix: source field, target Okta attribute, data type, whether it's PII, and any transformation needed in between (splitting a full name, normalizing a phone format, etc.).\n\nFrom there, a consultant chooses between two broad migration approaches. Bulk (staged) import moves the whole population at once — via CSV or the Users API — which suits organizations with a hard cutover date and a population small enough to validate in one pass; large populations are usually still broken into waves to catch data-quality problems before they compound. Just-in-time migration instead brings a user across the first time they actually authenticate, which avoids a big-bang cutover and works well for very large or long-tail populations, at the cost of running both the old and new systems in parallel for longer and requiring more up-front engineering.\n\nEither approach also forces a decision on the end-user experience: do you preserve existing passwords and enrolled MFA factors so the migration is invisible to users, or use the cutover as an opportunity to modernize authentication (e.g., moving people to passwordless)? Whatever is chosen needs to be paired with concrete success metrics — completion rate, support-ticket volume, and MFA adoption are the ones that come up most often — plus a documented rollback plan in case the cutover has to be reversed.",
+    "sourceUrl": "https://developer.okta.com/docs/guides/migrate-to-okta-plan/main/",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_a_004",
+    "domain": "Implementing Advanced SSO Strategies",
+    "topic": "advanced_saml",
+    "title": "SAML App Integrations: Okta as IdP and as SP",
+    "body": "SAML is the XML-based standard most enterprise SSO integrations still lean on, and Okta can sit on either side of the exchange. Most of the time Okta is the identity provider (IdP): a user tries to reach a SAML-protected app, gets bounced to Okta to authenticate (including satisfying whatever MFA policy applies), and is then handed back to the app carrying a signed SAML assertion the app trusts because it was configured with Okta's certificate and metadata.\n\nLess commonly, Okta itself acts as the service provider (SP), accepting an assertion issued by someone else's identity system — the study guide calls out legacy enterprise IdPs like IBM Tivoli or Oracle Access Manager as the kind of external IdP this shows up with. In that direction, the flow is mirrored: the user is sent to the external IdP, authenticates there, and Okta validates the assertion that comes back before it will grant the user a session.\n\nA SAML assertion itself typically carries three kinds of statements: who the user is (authentication), what's true about them (attribute statements — role, department, and so on), and what they're allowed to do (authorization statements). One integration detail worth remembering for the exam: SAML apps can be configured to use Just-In-Time provisioning, meaning the very first successful assertion for a brand-new user is enough to create their Okta account on the spot, without any prior HR or directory import having happened.",
+    "sourceUrl": "https://help.okta.com/en-us/content/topics/apps/apps-about-saml.htm",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_a_005",
+    "domain": "Implementing Advanced SSO Strategies",
+    "topic": "oag",
+    "title": "Okta Access Gateway (OAG)",
+    "body": "Okta Access Gateway exists for a specific gap: legacy, on-premises web applications that were never built to speak SAML or OIDC, but that still need to sit behind Okta's SSO and policy engine instead of (or in addition to) a traditional VPN. Rather than modifying the legacy app, OAG is deployed as a reverse-proxy virtual appliance that sits in front of it — the browser talks to OAG, and OAG talks to the backend app using whatever legacy mechanism the app actually understands, whether that's an HTTP header, a Kerberos ticket, or a proprietary session scheme.\n\nBecause every request to the protected app passes through the appliance first, OAG can apply the same kind of access policy Okta already applies to modern apps — group membership, network location, and other conditions — before it ever forwards the request, and it injects the credentials or headers the legacy app expects on the way through. From the end user's point of view, the app looks and feels like any other SSO-protected Okta app; from the legacy app's point of view, nothing about how it authenticates users has to change at all.\n\nThe consultant-relevant takeaway is architectural: OAG is the tool you reach for when an app genuinely cannot federate, not a general substitute for building a real SAML/OIDC/SWA integration when one is possible.",
+    "sourceUrl": "https://help.okta.com/oag/en-us/content/topics/access-gateway/about-oag.htm",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_a_006",
+    "domain": "Implementing Advanced SSO Strategies",
+    "topic": "radius_agent",
+    "title": "Okta RADIUS Agent",
+    "body": "The Okta RADIUS Agent extends Okta's authentication and sign-on policy engine to on-premises infrastructure and applications that only understand the RADIUS protocol — things like VPN concentrators or network appliances rather than web apps. Instead of that infrastructure checking credentials against a local user store, the RADIUS agent forwards the authentication request to Okta, which means the same MFA and sign-on policy an admin already manages for cloud apps in the Admin Console also governs access to these RADIUS-protected resources.\n\nThe agent itself runs on-premises as a downloadable server component, and an org isn't limited to a single RADIUS app — multiple RADIUS-protected applications can be registered and managed centrally from Okta, each represented as its own app object with its own policy assignment. That centralization is the main selling point for a Consultant-level design: it collapses what would otherwise be a separate, siloed authentication mechanism into the same admin console and policy model used everywhere else in the org.\n\nDeeper installation-level details — the exact config file layout, shared-secret handling, and per-platform install steps — live in Okta's dedicated Windows/Linux/AWS RADIUS agent installation guides rather than the overview page, but understanding when RADIUS is the right tool (non-web, protocol-level authentication) versus SAML/OIDC (web-based federation) is the conceptual piece worth knowing cold.",
+    "sourceUrl": "https://help.okta.com/en-us/content/topics/integrations/getting-started.htm",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_a_007",
+    "domain": "Implementing Advanced SSO Strategies",
+    "topic": "oidc_oauth_roles",
+    "title": "OAuth 2.0 and OIDC Roles",
+    "body": "OAuth 2.0 and OpenID Connect solve two related but distinct problems, and they use different vocabulary for what is often the same physical system. In OAuth 2.0 terms, the resource owner is the person who owns some protected data, the client is the application asking to access it on the owner's behalf, the resource server is where that data actually lives, and the authorization server is the system that issues the tokens which let the client prove it has permission. OAuth 2.0's job is authorization — granting scoped access to a resource without handing over the user's actual credentials.\n\nOIDC is a thin identity layer built on top of that same OAuth 2.0 mechanics, and it renames a couple of the roles to make the identity use case clearer: the authorization server becomes the OpenID Provider (the system that vouches for who the user is and issues an ID token), and the client becomes the relying party (the app that wants to know who's logged in, not just what they can access). The end user is the person the ID token describes, and a claim is any single fact about them the token carries — email, name, department, and so on.\n\nOkta typically plays both roles at once for a given app: it's the authorization server minting and validating OAuth access/refresh tokens, and it's the OpenID Provider issuing ID tokens, each org maintaining its own issuer URI and signing keys so token trust boundaries stay cleanly separated between orgs. Recognizing which vocabulary a question is using — OAuth's client/resource-owner language versus OIDC's relying-party/end-user language — is usually the fastest way to identify which flow and which token type a scenario is actually describing.",
+    "sourceUrl": "https://developer.okta.com/docs/concepts/oauth-openid/",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_a_008",
+    "domain": "Implementing Custom Configuration Options with Okta",
+    "topic": "opp",
+    "title": "On-Premises Provisioning (OPP) Architecture",
+    "body": "On-premises provisioning (OPP) lets Okta manage user lifecycle for apps that live entirely inside an organization's own network and were never built with a cloud-reachable API. The architecture has four pieces, and the split matters: Okta itself runs in the cloud, while the Okta Provisioning Agent, a SCIM server (or a set of custom connectors), and the actual on-prem application all sit behind the customer's firewall.\n\nThe flow is agent-driven rather than push-driven from Okta's side, because Okta generally can't reach inside the firewall directly. When an admin assigns a user to the app (or updates/deactivates them), Okta records a provisioning event; the on-prem Provisioning Agent polls Okta for pending events, translates each one into a standard SCIM request, and POSTs it to the local SCIM server's Users endpoint, which is what actually creates, updates, or deactivates the account inside the legacy application. The SCIM server then reports success or failure back through the same chain.\n\nBecause the agent is a single point of failure for every app relying on it, larger deployments typically run a second Provisioning Agent and SCIM connector on separate infrastructure as a failover pair, and the connection between agent and Okta is required to run over TLS 1.2. For a Consultant exam scenario, OPP is the answer whenever the requirement is \"provision an app that has no public API and isn't in the OIN catalog,\" as opposed to SCIM App Wizard or an OIN integration, which assume the target app (or a connector reaching it) is directly reachable from Okta.",
+    "sourceUrl": "https://help.okta.com/en-us/Content/Topics/Provisioning/opp/OPP-architecture.htm",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_a_009",
+    "domain": "Implementing Custom Configuration Options with Okta",
+    "topic": "okta_hooks",
+    "title": "Okta Hooks: Inline vs. Event Hooks",
+    "body": "Okta Hooks are outbound webhook calls that let an external service participate in something happening inside Okta, but the two flavors — inline hooks and event hooks — differ in exactly when and how they participate, and that difference is the whole point on the exam. An inline hook is synchronous and blocking: Okta pauses in the middle of a live process (user registration, token minting, a SAML assertion being built) and waits for your external service to respond before continuing, which means the hook's response can actually change the outcome — add a claim to a token, reject a registration, enrich a SAML assertion with extra attributes.\n\nAn event hook, by contrast, fires after something has already happened and doesn't wait for a response to change anything; it's a fire-and-forget JSON payload describing what occurred (a user was deactivated, a group membership changed, and so on), delivered as an HTTPS POST to an endpoint you own. Because Okta isn't blocking on the reply, event hooks are the right tool for downstream automation that shouldn't be allowed to slow down or fail the original Okta operation — updating an HR system record, opening a support ticket, or forwarding the event into a SIEM.\n\nEither way, building a hook means standing up and hosting your own internet-reachable web service that implements Okta's documented request/response contract — Okta defines the API shape, but the hosting, security, and business logic on the receiving end are entirely the implementer's responsibility. A useful shorthand for telling the two apart in a scenario question: if the requirement is \"change what Okta does,\" it's an inline hook; if it's \"notify something else after Okta did it,\" it's an event hook.",
+    "sourceUrl": "https://developer.okta.com/docs/concepts/event-hooks/",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_a_010",
+    "domain": "Implementing Custom Configuration Options with Okta",
+    "topic": "custom_email_domain",
+    "title": "Custom Email Domain",
+    "body": "By default, every system email Okta sends — activation links, password resets, MFA codes — comes from a generic Okta address rather than the customer's own domain, which can look off-brand or even suspicious to end users who aren't expecting mail from a third party. Configuring a custom email domain fixes that by having Okta send from an address under the organization's own domain instead, and it's set up from Customizations > Brands > Domains in the Admin Console, restricted to super admins or org admins who have access to that domain's DNS.\n\nThe DNS side isn't optional set-dressing — Okta strongly pushes SPF configuration as part of this, since without it, mail claiming to come from the customer's domain is far easier to spoof, and if SPF already exists for other purposes it typically needs to be extended (SPF records that grow past roughly 10 DNS lookups start failing validation, which is a real constraint consultants have hit in practice). \n\nA couple of scoping rules matter for scenario questions: an org can only have one active custom email domain at a time (switching requires moving to a different domain or reverting to the Okta default), and Okta explicitly can't be pointed at a domain that's already routed through SendGrid — the workaround there is carving out a dedicated subdomain instead. Okta also runs ongoing daily health checks on the configured domain and will silently fall back to sending from the default Okta domain (with a notification to super admins) if something about the custom domain's DNS breaks.",
+    "sourceUrl": "https://help.okta.com/en-us/content/topics/settings/settings_configure_a_custom_email_domain.htm",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_a_011",
+    "domain": "Implementing Custom Configuration Options with Okta",
+    "topic": "custom_url_domain",
+    "title": "Custom URL Domain",
+    "body": "Every Okta org ships with a default sign-in URL under the okta.com domain (something like dev-xxxxxx.okta.com), and a custom URL domain replaces that with a domain the organization actually owns — so end users authenticate at a URL that looks like it belongs to the company, not a third-party vendor. It's configured from Customizations > Brands > Domains, and each brand in a multi-brand org can be given its own distinct custom domain.\n\nCertificates are the part most worth remembering: Okta offers to fully manage the TLS certificate for the custom domain using Let's Encrypt, auto-renewing it with no ongoing admin effort — the catch is that Okta-managed certificates aren't compatible with Dynamic Zones/network zone restrictions, so an org that needs network-zone-based access control has to fall back to a self-managed certificate and take on renewal responsibility itself. If the org also customizes its sign-in or error pages, it needs to separately verify the Content Security Policy settings still match what those custom pages require.\n\nTwo operational gotchas show up repeatedly in real deployments: URLs must be shared exactly as configured because redirect URLs to the custom domain won't work, and turning a custom domain off resets identity providers, authorization servers, and OIDC apps back to referencing the org's original okta.com issuer — which can quietly break federated integrations that had baked in the custom domain as their issuer.",
+    "sourceUrl": "https://help.okta.com/en-us/content/topics/settings/settings-configure-custom-url.htm",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_a_012",
+    "domain": "Implementing Custom Configuration Options with Okta",
+    "topic": "scim_app_wizard",
+    "title": "SCIM App Integrations and the App Wizard",
+    "body": "SCIM (System for Cross-domain Identity Management) is the standardized protocol Okta uses to keep user and group records in sync with an external application without a human re-typing the same change in two places. Practically, that means create, update, and deactivate operations flow automatically in whichever direction is configured — a title change in Okta pushes out to the app, or a license getting revoked in the app can flow back and update the Okta record, depending on how provisioning is set up for that integration.\n\nWhen the target application already has a published SCIM-compatible integration in the OIN catalog, an admin just adds that catalog app and configures provisioning directly. When it doesn't, the App Integration Wizard's SCIM option is what lets a consultant build a custom SCIM integration from scratch against any app that exposes a SCIM 2.0-compatible endpoint — the wizard walks through supplying the SCIM base URL and an authentication method (commonly Basic Auth, using a dedicated account scoped to just the create/update/deprovision actions the integration needs) so Okta knows both where to send requests and how to authenticate them.\n\nOnce that connection is live, the same app can typically be configured as either a provisioning target (Okta pushes attribute changes to it) or, if it also holds authoritative identity data, as a profile source feeding attributes back into Okta — so SCIM integration work often overlaps directly with the sourcing/priority decisions covered elsewhere in the Advanced Sourcing domain.",
+    "sourceUrl": "https://help.okta.com/en-us/content/topics/apps/apps-about-scim.htm",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_a_013",
+    "domain": "Implementing Custom Configuration Options with Okta",
+    "topic": "mfa_as_service",
+    "title": "MFA as a Service via the Authentication API",
+    "body": "Okta's MFA model organizes verification into three broad categories — something you know (a password or PIN), something you have (a phone, hardware key, or smart card), and something you are (a fingerprint or face scan) — and Identity Engine draws a further distinction between an authenticator (a specific method like Okta Verify or a YubiKey) and a factor (the broader category that method falls into). A user's specific enrolled instance of an authenticator — their particular phone with Okta Verify installed, say — is what's actually referenced when a policy evaluates whether they've satisfied a requirement.\n\nTwo policy layers control how and when MFA actually gets enforced. Authenticator enrollment policies decide which authenticators a given user population is allowed (or required) to enroll, and when that enrollment has to happen. App sign-in policies then decide, per app and per group, what level of authentication a session needs to reach before access is granted — and those requirements can flex based on context like network location or device state, which is where MFA overlaps with device assurance and behavioral policy work elsewhere in the exam.\n\nThe \"as a Service\" angle is the developer-facing side of the same system: the Authenticators API and the User Authenticator Enrollments API expose the same enrollment and verification machinery programmatically, so a custom application can drive its own MFA challenges (enroll a factor, trigger a challenge, verify a response) without routing users through Okta's own hosted sign-in widget — useful when a scenario calls for MFA embedded directly into a first-party app's own UI rather than a redirect-based flow.",
+    "sourceUrl": "https://developer.okta.com/docs/concepts/mfa/",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_a_014",
+    "domain": "Implementing Directory Solutions",
+    "topic": "multi_domain_forest_ad",
+    "title": "AD Integration Across Multiple Domains and Forests",
+    "body": "The single fact that drives most multi-domain/multi-forest AD design decisions is that the Okta AD agent can see across domains within one forest, but never across separate forests. Practically, that means one agent installation can be registered against several domains as long as they all belong to the same forest and have the right trust relationships in place, but the moment users live in a second, separate forest, that forest needs its own independently installed agent — there's no way for a single agent to reach across the forest boundary.\n\nEven within a single forest, registering many domains to one agent is a resilience trade-off, not just a convenience: if that one agent goes down, every domain it was servicing goes dark for imports and delegated authentication at the same time. The recommended mitigation is installing a second agent on separate infrastructure in each domain (or at least in the domains that matter most), rather than relying on a single agent as a silent single point of failure. Resource forests are a common exception worth remembering — since they typically host only shared resources and no real user accounts, they generally don't need an agent installed at all.\n\nWhichever topology is chosen, the AD service account behind the agent has to carry read access to users in every domain the agent is asked to reach — a single set of permissions has to be provisioned correctly across each domain in scope, which is exactly the kind of least-privilege, multi-domain permissioning work a Consultant-level engagement is expected to plan and execute rather than just describe.",
+    "sourceUrl": "https://help.okta.com/en-us/content/topics/directory/ad-agent-integrate-existing.htm",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_b_001",
+    "domain": "Implementing Directory Solutions",
+    "topic": "dsso",
+    "title": "Desktop Single Sign-On: Agentless vs. IWA Agent",
+    "body": "Desktop Single Sign-On (DSSO) lets a user who has already authenticated to their Windows domain session move straight into Okta-protected apps without being prompted for credentials a second time. Okta offers two ways to implement it. Agentless DSSO is the recommended modern path: it's configured against a specific Active Directory instance using a registry-key/SPN-based setup with no additional on-premises software to install or maintain, and Okta itself takes on responsibility for validating the Kerberos ticket. The older approach installs and maintains an on-premises IWA (Integrated Windows Authentication) Web Agent, which does the same job but adds a piece of infrastructure the customer has to patch, monitor, and keep highly available.\n\nBoth approaches share the same practical constraints worth remembering for the exam: the client machine must be domain-joined, and the user must be reachable on the corporate network (agentless DSSO also tolerates a VPN connection into that network) for the automatic redirect to work. If those conditions aren't met, Okta falls back to a normal sign-in prompt rather than failing outright. Because agentless DSSO removes an entire agent tier from the architecture, it's generally the answer a consultant should reach for unless there's a specific reason (e.g., an environment that can't support the agentless prerequisites) to fall back to the IWA agent model.",
+    "sourceUrl": "https://help.okta.com/en-us/content/topics/directory/ad-desktop-sso-main.htm",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_b_002",
+    "domain": "Implementing Directory Solutions",
+    "topic": "ldap_integration",
+    "title": "LDAP Integration: the Okta LDAP Agent and LDAP Interface",
+    "body": "The Okta LDAP Agent provides delegated authentication against an on-premises LDAP directory: users keep signing in with their existing local LDAP credentials, and those credentials are never replicated up into the Okta cloud. It's a lightweight on-prem install that syncs user profiles to and from the LDAP directory and brokers authentication checks back to it, which lets an organization treat Okta as the single place users and apps interact with while the LDAP directory stays the durable source of truth for identity.\n\nThe LDAP Interface solves a different, complementary problem: legacy applications that only know how to speak the LDAP protocol (they can't do SAML or OIDC) still need a way to authenticate against modern, cloud-based Okta Universal Directory. Rather than installing and maintaining an LDAP Agent pointed at a real directory, the LDAP Interface is a cloud-hosted proxy that accepts LDAP bind/search commands from those legacy apps and translates them into Okta API calls behind the scenes. In short: the LDAP Agent connects Okta outward to a real, existing LDAP directory; the LDAP Interface lets old LDAP-only apps connect inward to Okta's own directory as if it were an LDAP server, without any on-prem agent at all.",
+    "sourceUrl": "https://help.okta.com/en-us/content/topics/directory/ldap-agent-get-started.htm",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_b_003",
+    "domain": "Implementing Inbound Federation with Okta",
+    "topic": "idp_discovery_routing",
+    "title": "IdP Discovery and Routing Rules",
+    "body": "IdP Discovery (also called routing rules) lets an org send different users to different identity providers automatically, based on context evaluated at the moment they try to sign in — things like whether they're on or off the corporate network, whether they're on a desktop or mobile device, their email domain, specific user attributes, or which application they're trying to reach. Okta evaluates the configured rules in priority order and applies the first one the request matches; if a rule needs to know something about the user (like their email) that Okta doesn't have yet, it first prompts for that identifier before it can finish evaluating the rule.\n\nTypical patterns include routing on-network desktop users to Integrated Windows Authentication/DSSO while sending mobile users through Okta's own factors, or using an email subdomain to route users of a multi-tenant or hub-and-spoke deployment to the correct originating org. The detail most worth remembering for the exam is a limitation, not a feature: routing rules exist purely to improve the sign-in experience by choosing the right screen — they are explicitly not a security control. An org still has to enforce actual access restrictions through sign-on and authentication policies; routing rules alone can't be relied on to block anyone from anything.",
+    "sourceUrl": "https://help.okta.com/en-us/Content/Topics/Security/Identity_Provider_Discovery.htm",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_b_004",
+    "domain": "Implementing Inbound Federation with Okta",
+    "topic": "okta_as_sp_social_idp",
+    "title": "Okta as a Service Provider: Third-Party and Social IdPs",
+    "body": "Okta can flip roles and act as a Service Provider (SP), letting some other identity provider perform the actual primary authentication while Okta consumes the result. The IdP types Okta supports in this role span several categories: social identity providers (Google, Microsoft, Facebook and similar consumer identity accounts), standards-based SAML 2.0 IdPs, generic OpenID Connect IdPs (useful for a custom or third-party OIDC provider that isn't one of Okta's pre-built social integrations), smart-card-based IdPs, and \"Okta Integration\" IdPs, where another Okta org itself is added as the identity source — the underlying mechanism behind Org2Org-style federation between two Okta tenants.\n\nAdding one or more of these IdPs is what lets end users self-register with an org's custom applications by first authenticating somewhere else — with a social account or a smart card, for example — instead of Okta having to own their primary credential. In practice this is almost always paired with IdP Discovery/routing rules, so that instead of showing every user a generic sign-in page, Okta automatically sends each person to whichever of these configured IdPs actually matches their situation.",
+    "sourceUrl": "https://help.okta.com/en-us/content/topics/security/identity_providers.htm",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_b_005",
+    "domain": "Implementing Inbound Federation with Okta",
+    "topic": "account_linking",
+    "title": "Account Linking in Inbound Federation",
+    "body": "When an external IdP authenticates a user and hands control back to Okta, Okta has to decide whether that incoming identity corresponds to an existing Okta user profile. Two separate settings govern this, and the exam-relevant trick is not to conflate them. \"Match against\" defines the comparison logic: which local Universal Directory attribute (typically username or email) should be compared to the identifier the IdP asserted, in order to look for a matching existing profile. \"Account Link Policy\" then governs whether that comparison is actually allowed to create a new link automatically at all.\n\nWith the Account Link Policy set to Automatic, Okta searches Universal Directory for a profile whose match-against attribute equals the value the IdP supplied; a hit gets linked (or, with JIT provisioning enabled, no hit can result in a brand-new profile being created instead). With the policy set to Disabled, Okta will not create new automatic links under any circumstance — only accounts that were already linked previously (through a prior automatic link or a manual admin action) are allowed through, and every other incoming identity simply fails to sign in. Getting this pair of settings right is central to safely onboarding an inbound-federation IdP without silently merging the wrong accounts together.",
+    "sourceUrl": "https://developer.okta.com/docs/guides/add-an-external-idp/main/",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_b_006",
+    "domain": "Implementing Inbound Federation with Okta",
+    "topic": "org2org",
+    "title": "Okta Org2Org Configuration",
+    "body": "Org2Org is a purpose-built app integration for connecting two separate Okta orgs together in a hub-and-spoke arrangement, rather than for federating with some outside, non-Okta system. A \"spoke\" (source) org authenticates and can push users into a \"hub\" (target) org, and the integration supports both SSO — via SAML (including IdP-initiated flows) — and provisioning, including JIT account creation and ongoing user/group push, so the two tenants can be kept in sync rather than just cross-authenticated once.\n\nThere are two ways the provisioning side of that connection gets configured: the original approach configures the Org2Org app integration in the source org using SAML 2.0, while a newer approach configures the connection to use the OAuth 2.0 Client Credentials grant against the target org's APIs, which avoids some of the fragility of a long-lived SAML-app-based provisioning connector. A consultant reaches for Org2Org specifically when the requirement is to merge or link multiple Okta tenants — common after an acquisition, or in a franchise/multi-brand structure — not as a way to integrate a single Okta org with a third-party application.",
+    "sourceUrl": "https://help.okta.com/en-us/content/topics/provisioning/org2org/org2org-main.htm",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_b_007",
+    "domain": "Implementing Okta Policies",
+    "topic": "fastpass",
+    "title": "Okta FastPass",
+    "body": "Okta FastPass is Okta's phishing-resistant, passwordless authenticator, delivered through the Okta Verify app and supported across managed and unmanaged Windows, macOS, iOS, and Android devices. It replaces the password with public-key cryptography: at enrollment, the device generates a key pair, and the private key never leaves the device. At sign-in time, Okta's server issues a one-time challenge; Okta Verify signs that challenge with the enrolled private key and returns the signature, the server validates it against the known public key, and only then evaluates any additional device-state or assurance policies before granting access — no password is ever transmitted or even exists to be phished, stuffed, or sprayed against.\n\nFastPass also plugs into whatever platform authenticator the device already has, so the user experience is typically Windows Hello, Touch ID, or Face ID confirming local presence/biometrics rather than typing anything. Because the credential is a device-bound private key rather than a shared secret, FastPass sign-ins are inherently resistant to the classic phishing and credential-replay attacks that plague password- and even some OTP-based MFA flows, which is why FastPass is frequently paired with device assurance policies as the strongest available authenticator tier in a sign-on policy.",
+    "sourceUrl": "https://help.okta.com/oie/en-us/content/topics/identity-engine/devices/fp/fp-main.htm",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_b_008",
+    "domain": "Implementing Okta Policies",
+    "topic": "global_session_policy_behavior",
+    "title": "Behavior Detection in Global Session Policy",
+    "body": "Behavior Detection gives Okta a way to notice when a sign-in doesn't look like the user's normal pattern, by tracking five specific signals: a change in location, a new/unrecognized device, a different IP address, a different ASN (the network block/provider the traffic is coming from), and unusual velocity (impossibly fast travel between two sign-in locations, for example). Okta keeps a rolling history of a user's recent session context so each new attempt can be compared against what's typical for that person, and admins reference the specific behavior(s) they care about as conditions on rules inside a Global Session Policy (or an Authentication Policy).\n\nThe detail that shows up repeatedly across both the Administrator and Consultant exams is a hard limitation, not a feature: a Behavior Detection condition can never, by itself, deny a sign-in. All it can do is trigger a step-up requirement — typically forcing an additional MFA challenge — when the configured behavior change is detected. If the goal is to actually block access under some condition, that has to come from a different part of the policy (like a network zone deny rule); behavior conditions only ever make authentication harder, never impossible.",
+    "sourceUrl": "https://help.okta.com/oie/en-us/content/topics/security/behavior-detection/about-behavior-policy-rule.htm",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_b_009",
+    "domain": "Implementing Okta Policies",
+    "topic": "authentication_policies",
+    "title": "Sign-On Policies and Pre-Authentication Evaluation",
+    "body": "Okta's sign-on/authentication policies are what govern session lifetime, whether and which MFA factors are required, and other authentication-time conditions. They're evaluated hierarchically: Okta walks the org's policies in priority order, and for the first policy whose conditions match the request, it then walks that policy's rules in order and applies the settings from the first rule that fully matches. Every org has a required default policy that acts as the ultimate fallback when nothing more specific matches.\n\nA related hardening feature worth knowing by name for the exam is Pre-Authentication Sign-On Evaluation Policy. Normally, a failed sign-in attempt (bad password, bad factor) is what counts against an account's lockout threshold. With pre-authentication evaluation enabled, Okta checks whether the sign-on policy would deny the request outright — for example, because it's coming from a disallowed network or location — before it even checks the password or factor. If the policy itself would have blocked the request anyway, that attempt doesn't consume one of the account's limited lockout attempts. That distinction matters operationally: it prevents attackers hammering an account from outside an allowed network from being able to lock a legitimate user out through sheer volume, since those out-of-policy attempts never touch the lockout counter in the first place.",
+    "sourceUrl": "https://help.okta.com/en-us/content/topics/security/policies/about-signon-policies.htm",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_b_010",
+    "domain": "Implementing Okta Policies",
+    "topic": "threatinsight",
+    "title": "Okta ThreatInsight",
+    "body": "ThreatInsight is a cross-tenant threat signal: Okta aggregates sign-in attempt telemetry across its entire customer base — not just one org — to build a shared reputation baseline for IP addresses, and uses that baseline to flag IPs behaviorally associated with credential stuffing, password spraying, or brute-force attacks against any Okta customer. That flag is then applied to sign-in evaluation for your own org, effectively giving every tenant the benefit of attack patterns observed elsewhere.\n\nThreatInsight can run in one of two modes: Log Only, which just records suspicious activity for visibility and audit without affecting real sign-ins, or Log and Enforce, where Okta actively denies (or rate-limits, depending on confidence level) sign-in requests coming from IPs it has flagged as malicious. Admins can carve out Exempt network zones — trusted ranges, such as known corporate egress IPs — that ThreatInsight should never evaluate or block, which matters because ThreatInsight can't see past a misconfigured or untrusted proxy to the real originating client IP; correctly identifying trusted proxies in network zone configuration is what keeps its detection accurate rather than either over- or under-blocking.",
+    "sourceUrl": "https://help.okta.com/en-us/content/topics/security/threat-insight/ti-index.htm",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_b_011",
+    "domain": "Working with Okta APIs",
+    "topic": "api_code_collection",
+    "title": "Okta API Code Collection and Scripted Access",
+    "body": "Nearly every object an admin manages by hand in the Admin Console — users, groups, apps, policies, factors, devices, sessions — is also exposed through Okta's Core Management API, which is what makes bulk and repeatable operations (migrations, mass attribute updates, scripted onboarding/offboarding) practical. Rather than having every team hand-write raw HTTP calls against those endpoints, Okta publishes official Postman Collections: ready-made sets of request templates that a consultant imports into Postman, points at their org's base URL and credentials, and immediately has working examples to adapt for the resources they actually need to touch.\n\nOn the authentication side, Okta is explicit that the legacy `SSWS` API token scheme should be avoided for anything beyond quick, throwaway internal scripting — that token type inherits the full privileges of whichever admin created it with no way to scope it down, carries a fixed, non-rotating expiration, and offers no fine-grained control over what it's allowed to touch. The recommended approach for real automation or integration work is OAuth 2.0 access tokens issued with narrowly defined scopes, so a script or service account only has access to exactly the endpoints its job requires. Okta also maintains management SDKs in several languages that wrap the Core API for more ergonomic scripted use than raw REST calls.",
+    "sourceUrl": "https://developer.okta.com/docs/reference/rest/",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_b_012",
+    "domain": "Working with API Access Management",
+    "topic": "custom_authorization_server",
+    "title": "Custom Authorization Servers, Scopes, and Claims",
+    "body": "A custom authorization server is created under Security > API > Add Authorization Server, and is defined chiefly by its audience value — a URI representing the specific API/resource it's protecting. That audience value has to line up exactly with the `aud` claim a resource server expects to see inside any access token it accepts, which is what lets a resource server reject tokens meant for some other API. Each authorization server then holds one or more Access Policies, which are just containers of Rules; those rules control things like token lifetime based on the requesting grant type, client, user, and requested scope, and are evaluated in priority order like an allowlist — the first rule that matches wins, and a request matching no rule at all is denied outright.\n\nScopes and claims work as a matched pair rather than independently. A scope (a standard OIDC scope, or one the org defines itself) describes what access is being requested. A claim is an actual piece of data embedded in the resulting token — a user attribute, a role, any custom field — and every claim definition explicitly names which scope(s) are allowed to carry it. The practical effect is that a client only ever sees a given claim in its token if it also requested a scope that's been authorized to populate that claim; requesting broader scopes can't accidentally leak claims that weren't wired up to them.",
+    "sourceUrl": "https://developer.okta.com/docs/guides/customize-authz-server/main/",
+    "bookmarked": false
+  },
+  {
+    "id": "rn_b_013",
+    "domain": "Working with API Access Management",
+    "topic": "oauth_grants_sdks",
+    "title": "OAuth 2.0 Grant Types and Okta SDKs",
+    "body": "A \"grant type\" is simply the specific exchange pattern a client uses to obtain a token, and which one applies is dictated by what kind of client is asking, not by preference. Authorization Code is the default recommendation for web and native apps: the user is redirected to Okta to authenticate, Okta returns a one-time code, and the app exchanges that code for tokens. Public clients that can't safely hold a client secret (native/mobile/SPA apps) add the PKCE extension on top of that same flow, generating a one-time code verifier/challenge pair that prevents a stolen authorization code from being redeemed by anyone else. Client Credentials is the grant for service-to-service calls where there's no human user at all — a daemon or backend job authenticating as itself. Device Authorization Grant covers input-constrained hardware (smart TVs, CLI tools, kiosks) by showing the user a short code to enter on a second, more capable device. Okta additionally supports exchanging an existing SAML 2.0 assertion directly for an OAuth token via the SAML Bearer Assertion grant, useful for bridging legacy SAML integrations into a token-based world.\n\nRather than hand-implementing any of these flows against the raw OAuth/OIDC endpoints, Okta recommends using its own per-language and per-framework SDKs (or a well-established open-source OAuth library where no Okta SDK exists) — they already correctly implement the token exchange, PKCE handling, and refresh-token mechanics, which are exactly the details that are easiest to get subtly wrong by hand.",
+    "sourceUrl": "https://developer.okta.com/docs/guides/implement-grant-type/authcode/main/",
+    "bookmarked": false
+  }
+]
