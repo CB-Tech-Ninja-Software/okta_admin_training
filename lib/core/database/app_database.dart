@@ -78,11 +78,14 @@ class AppDatabase {
         await _createTables(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        // All CREATE TABLE statements use IF NOT EXISTS, so re-running them
-        // against an existing database safely adds only the tables that are
-        // missing (e.g. reference_notes, added in version 2) without
-        // touching any existing data.
-        await _createTables(db);
+        // Version 1 to 2 migration: Add reference_notes table
+        if (oldVersion < 2 && newVersion >= 2) {
+          // All CREATE TABLE statements use IF NOT EXISTS, so re-running them
+          // against an existing database safely adds only the tables that are
+          // missing (e.g. reference_notes, added in version 2) without
+          // touching any existing data.
+          await _createTables(db);
+        }
       },
     );
   }
