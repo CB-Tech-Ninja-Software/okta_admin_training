@@ -1,4 +1,4 @@
-package com.example.directory_dash
+package com.cbtechninja.directorydash
 
 import io.flutter.embedding.android.FlutterActivity
 

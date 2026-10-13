@@ -1,0 +1,15 @@
+# Key properties file for Android release signing
+# This file is ignored by git and should never be committed
+# For more information, see: https://flutter.dev/docs/deployment/android#signing-the-app
+
+# Store file path (relative to project root)
+storeFile=../path/to/your/keystore.jks
+
+# Store password
+storePassword=your_store_password
+
+# Key alias
+keyAlias=your_key_alias
+
+# Key password
+keyPassword=your_key_password
