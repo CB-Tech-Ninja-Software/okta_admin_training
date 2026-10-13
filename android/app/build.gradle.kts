@@ -29,15 +29,23 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            val keystoreProperties = java.util.Properties()
+            val keystorePropertiesFile = file("../key.properties")
+            if (keystorePropertiesFile.exists()) {
+                keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            signingConfig = signingConfigs.create("release") {
-                storeFile = file("../key.properties")
-                storePassword = "your_store_password"
-                keyAlias = "your_key_alias"
-                keyPassword = "your_key_password"
-            }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
