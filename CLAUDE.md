@@ -119,3 +119,7 @@ directory-dash/
 3. **Step dates by calendar days:** Calculate streak dates with `DateTime(y, m, d + n)`, never `Duration(days: n)` across DST transitions.
 4. **No async in `setState`:** Always await asynchronous service calls first before setting state.
 
+## 5. Building
+
+Run `scripts/build-windows.ps1` for a standard Windows build.
+
