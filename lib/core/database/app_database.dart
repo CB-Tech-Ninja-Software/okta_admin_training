@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:directory_dash/core/models/question.dart';
 import 'package:directory_dash/core/models/flashcard.dart';
@@ -36,8 +38,38 @@ class AppDatabase {
   }
 
   Future<Database> _initDatabase({String dbName = 'directory_dash.db'}) async {
-    final databasesPath = await getDatabasesPath();
+    // On desktop (Windows/Linux), sqflite_common_ffi's getDatabasesPath() defaults to a
+    // path relative to the process's current working directory -- not safe for an
+    // installed app, whose launch directory can vary (MSIX package folder, a shortcut's
+    // "Start in", etc). Use a stable, writable per-user app-support directory instead.
+    // Mobile (Android/iOS) keeps sqflite's own getDatabasesPath(), which is already correct.
+    final String databasesPath;
+    if (Platform.isWindows || Platform.isLinux) {
+      final supportDir = await getApplicationSupportDirectory();
+      databasesPath = supportDir.path;
+    } else {
+      databasesPath = await getDatabasesPath();
+    }
+    
     final dbPath = p.join(databasesPath, dbName);
+    
+    // Migration: If the new path doesn't have the database file but the old 
+    // cwd-relative path does, move the old file to the new location
+    if (Platform.isWindows || Platform.isLinux) {
+      final oldDbPath = p.join(await getDatabasesPath(), dbName);
+      final newDbFile = File(dbPath);
+      final oldDbFile = File(oldDbPath);
+      
+      if (!await newDbFile.exists() && await oldDbFile.exists()) {
+        try {
+          // Copy the old database file to the new location
+          await oldDbFile.copy(dbPath);
+        } catch (e) {
+          // If copy fails, proceed anyway to avoid breaking the app
+          // This is a best-effort migration
+        }
+      }
+    }
 
     return await openDatabase(
       dbPath,
@@ -46,11 +78,14 @@ class AppDatabase {
         await _createTables(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        // All CREATE TABLE statements use IF NOT EXISTS, so re-running them
-        // against an existing database safely adds only the tables that are
-        // missing (e.g. reference_notes, added in version 2) without
-        // touching any existing data.
-        await _createTables(db);
+        // Version 1 to 2 migration: Add reference_notes table
+        if (oldVersion < 2 && newVersion >= 2) {
+          // All CREATE TABLE statements use IF NOT EXISTS, so re-running them
+          // against an existing database safely adds only the tables that are
+          // missing (e.g. reference_notes, added in version 2) without
+          // touching any existing data.
+          await _createTables(db);
+        }
       },
     );
   }
